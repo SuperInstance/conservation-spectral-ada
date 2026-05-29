@@ -90,3 +90,5 @@ No mutexes, no locks, no race conditions — Ada's rendezvous model handles it a
 ## License
 
 MIT
+
+Part of the [SuperInstance OpenConstruct](https://github.com/SuperInstance/OpenConstruct) ecosystem.
