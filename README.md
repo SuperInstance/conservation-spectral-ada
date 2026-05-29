@@ -1,91 +1,76 @@
-# Conservation Spectral SDK — Ada
+# conservation-spectral-ada
 
-> Production-grade spectral graph theory library for conservation analysis, built in Ada to DO-178C avionics certification standards.
+Ada 2012 port of the Conservation Spectral SDK — spectral graph theory for conservation analysis, designed for DO-178C avionics certification standards.
 
-## Why Ada?
+## What This Gives You
 
-Ada was designed in the 1980s for safety-critical systems (missiles, aircraft, spacecraft). This SDK leverages every safety feature the language provides:
+- **SPARK-compatible** — pre/post conditions, type-range constraints, formal verification
+- **Spectral analysis** — Laplacian eigenvalues, conservation ratios, Cheeger constant
+- **Bounded types** — `Probability` (0.0..1.0), `Conservation_Ratio` (-100.0..100.0), `Graph_Index` (1..1000)
+- **Anomaly classification** — severity levels with confidence scores
+- **DO-178C target** — designed for avionics-grade software certification
 
-| Feature | How We Use It |
-|---------|--------------|
-| **Range types** | `Probability` can never be negative — the compiler enforces it |
-| **Pre/post conditions** | `Build_Laplacian` guarantees a valid Laplacian output |
-| **Tasking** | `Anomaly_Detector` runs as a concurrent Ada task with rendezvous synchronization |
-| **Generic packages** | Works with any floating-point precision (`Float`, `Long_Float`, etc.) |
-| **Protected objects** | `Statistics_Collector` is thread-safe by construction |
-| **Exception handling** | Singular matrices raise `Constraint_Error` |
-| **Strong typing** | You cannot accidentally pass a `Transition_Matrix` where a `Laplacian_Matrix` is expected |
-
-## Architecture
-
-```
-conservation_spectral.ads/adb   — Core package: Laplacian, spectral gap, Cheeger bound, entropy
-eigen.ads/adb                   — Eigendecomposition: QR algorithm, power iteration, Fiedler value
-anomaly.ads/adb                 — Thread-safe anomaly detection with baseline tracking
-generic_conservation.ads/adb    — Generic (template) package for any float precision
-main.adb                        — Comprehensive test driver
-Makefile                        — Build with GNAT (Ada 2022, assertions enabled)
-```
-
-## Build & Run
-
-```bash
-# Install GNAT compiler
-sudo apt install gnat
-
-# Build
-make
-
-# Run tests
-make run
-```
-
-## Compiler Flags
-
-```makefile
--gnat2022   # Ada 2022 mode (modern pre/post conditions)
--gnata      # Enable assertions
--gnato      # Overflow checks
--O2         # Optimization level 2
-```
-
-## Core Algorithms
-
-### Laplacian Construction
-```
-L = D - A
-```
-Where `D` is the degree matrix and `A` is the adjacency/weight matrix derived from the transition matrix.
-
-### Spectral Gap (Fiedler Value)
-Second-smallest eigenvalue of `L`, computed via inverse power iteration with deflation against the trivial eigenvector `[1,1,...,1]`.
-
-### Cheeger Inequality
-```
-h(G) ≥ √(2·λ₁)
-```
-Lower bound on graph conductance from the spectral gap.
-
-### Conservation Ratio
-```
-CR = tr(L^T · P · L) / tr(L^T · L)
-```
-Measures how much transition structure is preserved by the Laplacian mapping.
-
-## Thread Safety
-
-The `Anomaly_Detector` is an Ada **task** (lightweight thread) with rendezvous-based synchronization:
+## Quick Start
 
 ```ada
-task type Anomaly_Detector is
-   entry Set_Baseline (Report : Conservation_Report);
-   entry Check (Spectral_Gap, Cheeger_Constant, Conservation, Entropy : Float;
-                Is_Anomalous : out Boolean; Severity : out Anomaly_Severity);
-   entry Stop;
-end Anomaly_Detector;
+with Conservation_Spectral;
+
+procedure Demo is
+   Transition : Conservation_Spectral.Transition_Matrix (1..3, 1..3) :=
+     (others => (others => 0.0));
+   Laplacian  : Conservation_Spectral.Laplacian_Matrix (1..3, 1..3);
+   Report     : Conservation_Spectral.Conservation_Report;
+begin
+   -- Build transition matrix (row-stochastic)
+   Transition := ((0.0, 0.5, 0.5),
+                  (0.5, 0.0, 0.5),
+                  (0.5, 0.5, 0.0));
+
+   -- Compute Laplacian
+   Conservation_Spectral.Build_Laplacian (Transition, Laplacian);
+
+   -- Analyze
+   Report := Conservation_Spectral.Analyze (Laplacian);
+
+   Ada.Text_IO.Put_Line ("Conservation Score: " &
+     Float'Image (Report.Conservation_Score));
+   Ada.Text_IO.Put_Line ("Spectral Gap: " &
+     Float'Image (Report.Spectral_Gap));
+end Demo;
 ```
 
-No mutexes, no locks, no race conditions — Ada's rendezvous model handles it all.
+## API Reference
+
+| Type | Description |
+|---|---|
+| `Transition_Matrix` | Row-stochastic probability matrix |
+| `Laplacian_Matrix` | Symmetric positive semi-definite |
+| `Conservation_Report` | Full analysis: spectral gap, Cheeger, anomalies |
+| `Anomaly_Severity` | (None, Low, Medium, High, Critical) |
+
+| Procedure / Function | Description |
+|---|---|
+| `Build_Laplacian` | Transition → Laplacian (with pre/post conditions) |
+| `Is_Valid_Laplacian` | Verify positive semi-definiteness |
+| `Is_Row_Stochastic` | Verify row-stochastic property |
+| `Analyze` | Full conservation report |
+
+## How It Fits
+
+The **Ada port** of the conservation spectral ecosystem — certified-grade alternative to:
+
+- [conservation-spectral-python](https://github.com/SuperInstance/conservation-spectral-python) — Python SDK
+- [conservation-spectral-js](https://github.com/SuperInstance/conservation-spectral-js) — TypeScript SDK
+- [conservation-conformance](https://github.com/SuperInstance/conservation-conformance) — cross-language conformance tests
+- [conservation-protocol](https://github.com/SuperInstance/conservation-protocol) — Rust messaging protocol
+
+## Building
+
+```bash
+gnatmake -P conservation_spectral.gpr
+```
+
+Requires GNAT 2021+ or AdaCore SPARK Pro.
 
 ## License
 
