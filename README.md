@@ -1,10 +1,10 @@
-# Conservation Spectral SDK — Ada
+# conservation-spectral-ada
 
-> Production-grade spectral graph theory library for conservation analysis, built in Ada to DO-178C avionics certification standards.
+Production-grade spectral graph theory library for conservation analysis, built in Ada to DO-178C avionics certification standards — Laplacian construction, eigendecomposition, anomaly detection, and Cheeger bounds.
 
 ## Why Ada?
 
-Ada was designed in the 1980s for safety-critical systems (missiles, aircraft, spacecraft). This SDK leverages every safety feature the language provides:
+Ada was designed for safety-critical systems (missiles, aircraft, spacecraft). This SDK leverages every safety feature the language provides:
 
 | Feature | How We Use It |
 |---------|--------------|
@@ -13,82 +13,88 @@ Ada was designed in the 1980s for safety-critical systems (missiles, aircraft, s
 | **Tasking** | `Anomaly_Detector` runs as a concurrent Ada task with rendezvous synchronization |
 | **Generic packages** | Works with any floating-point precision (`Float`, `Long_Float`, etc.) |
 | **Protected objects** | `Statistics_Collector` is thread-safe by construction |
-| **Exception handling** | Singular matrices raise `Constraint_Error` |
-| **Strong typing** | You cannot accidentally pass a `Transition_Matrix` where a `Laplacian_Matrix` is expected |
+| **Strong typing** | Cannot accidentally pass a `Transition_Matrix` where a `Laplacian_Matrix` is expected |
 
-## Architecture
+## What This Gives You
 
-```
-conservation_spectral.ads/adb   — Core package: Laplacian, spectral gap, Cheeger bound, entropy
-eigen.ads/adb                   — Eigendecomposition: QR algorithm, power iteration, Fiedler value
-anomaly.ads/adb                 — Thread-safe anomaly detection with baseline tracking
-generic_conservation.ads/adb    — Generic (template) package for any float precision
-main.adb                        — Comprehensive test driver
-Makefile                        — Build with GNAT (Ada 2022, assertions enabled)
-```
+- **Laplacian construction** — `L = D - A` from transition matrices, with compiler-verified dimensions
+- **Eigendecomposition** — QR algorithm, power iteration, Fiedler value extraction
+- **Spectral gap & Cheeger bounds** — Graph connectivity analysis
+- **Entropy computation** — Spectral entropy for information-theoretic measures
+- **Thread-safe anomaly detection** — Concurrent `Anomaly_Detector` task with baseline tracking
+- **Generic precision** — Same algorithms work at `Float`, `Long_Float`, or any precision
 
-## Build & Run
+## Quick Start
+
+### Build and run
 
 ```bash
 # Install GNAT compiler
 sudo apt install gnat
 
-# Build
+# Build and test
 make
-
-# Run tests
 make run
 ```
 
-## Compiler Flags
+Compiler flags: `-gnat2022` (Ada 2022 mode), `-gnata` (assertions), `-gnato` (overflow checks), `-O2`.
 
-```makefile
--gnat2022   # Ada 2022 mode (modern pre/post conditions)
--gnata      # Enable assertions
--gnato      # Overflow checks
--O2         # Optimization level 2
-```
-
-## Core Algorithms
-
-### Laplacian Construction
-```
-L = D - A
-```
-Where `D` is the degree matrix and `A` is the adjacency/weight matrix derived from the transition matrix.
-
-### Spectral Gap (Fiedler Value)
-Second-smallest eigenvalue of `L`, computed via inverse power iteration with deflation against the trivial eigenvector `[1,1,...,1]`.
-
-### Cheeger Inequality
-```
-h(G) ≥ √(2·λ₁)
-```
-Lower bound on graph conductance from the spectral gap.
-
-### Conservation Ratio
-```
-CR = tr(L^T · P · L) / tr(L^T · L)
-```
-Measures how much transition structure is preserved by the Laplacian mapping.
-
-## Thread Safety
-
-The `Anomaly_Detector` is an Ada **task** (lightweight thread) with rendezvous-based synchronization:
+### Using the SDK
 
 ```ada
-task type Anomaly_Detector is
-   entry Set_Baseline (Report : Conservation_Report);
-   entry Check (Spectral_Gap, Cheeger_Constant, Conservation, Entropy : Float;
-                Is_Anomalous : out Boolean; Severity : out Anomaly_Severity);
-   entry Stop;
-end Anomaly_Detector;
+with Conservation_Spectral; use Conservation_Spectral;
+with Eigen;
+
+-- Build a Laplacian from a 4-node ring graph
+N : constant := 4;
+subtype Idx is Graph_Index range 1 .. N;
+Trans : Transition_Matrix (Idx, Idx);
+Lap   : Laplacian_Matrix  (Idx, Idx);
+
+-- Initialize transition matrix...
+Build_Laplacian (Trans, Lap);
+
+-- Compute conservation report
+Report : Conservation_Report := Analyze (Lap);
+--  Report contains: spectral_gap, cheeger_bound, entropy, fiedler_value
 ```
 
-No mutexes, no locks, no race conditions — Ada's rendezvous model handles it all.
+## Architecture
+
+```
+conservation_spectral.ads/adb   — Core: Laplacian, spectral gap, Cheeger bound, entropy
+eigen.ads/adb                   — Eigendecomposition: QR algorithm, power iteration, Fiedler value
+anomaly.ads/adb                 — Thread-safe anomaly detection with baseline tracking
+generic_conservation.ads/adb    — Generic (template) package for any float precision
+main.adb                        — Comprehensive test driver
+```
+
+## How It Fits
+
+- **[conservation-protocol](https://github.com/SuperInstance/conservation-protocol)** — Rust library for spectral agent identity; this Ada SDK provides the same math for safety-critical environments
+- **[constraint-hamiltonian](https://github.com/SuperInstance/constraint-hamiltonian)** — Constrained dynamics use spectral properties for constraint surface analysis
+- **[cocapn-health-rs](https://github.com/SuperInstance/cocapn-health-rs)** — Anomaly detection patterns inform fleet health monitoring
+
+## Testing
+
+The `main.adb` test driver exercises all packages: Laplacian construction, eigenvalue computation, anomaly detection, and the generic package.
+
+```bash
+make run
+```
+
+## Installation
+
+```bash
+git clone https://github.com/SuperInstance/conservation-spectral-ada.git
+cd conservation-spectral-ada
+make
+```
+
+Requires GNAT (Ada 2022 compiler).
 
 ## License
 
 MIT
 
-Part of the [SuperInstance OpenConstruct](https://github.com/SuperInstance/OpenConstruct) ecosystem.
+Part of the [SuperInstance OpenConstruct](https://github.com/SuperInstance) ecosystem.
