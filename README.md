@@ -1,5 +1,9 @@
 # conservation-spectral-ada
 
+[![SuperInstance](https://img.shields.io/badge/SuperInstance-Ecosystem-blue)](https://github.com/SuperInstance)
+
+
+
 Production-grade spectral graph theory library for conservation analysis, built in Ada to DO-178C avionics certification standards — Laplacian construction, eigendecomposition, anomaly detection, and Cheeger bounds.
 
 ## Why Ada?
@@ -98,3 +102,7 @@ Requires GNAT (Ada 2022 compiler).
 MIT
 
 Part of the [SuperInstance OpenConstruct](https://github.com/SuperInstance) ecosystem.
+
+## Documentation
+
+📚 [OpenConstruct Docs](https://github.com/SuperInstance/openconstruct-docs)
